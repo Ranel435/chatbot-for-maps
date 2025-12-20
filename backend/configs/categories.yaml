@@ -1,0 +1,104 @@
+categories:
+  religious:
+    name_ru: "Религиозные объекты"
+    name_en: "Religious"
+    icon: "church"
+    subcategories:
+      church:
+        name_ru: "Церкви"
+        name_en: "Churches"
+        osm_tags:
+          - "amenity=place_of_worship"
+          - "building=church"
+      monastery:
+        name_ru: "Монастыри"
+        name_en: "Monasteries"
+        osm_tags:
+          - "amenity=monastery"
+      cathedral:
+        name_ru: "Соборы"
+        name_en: "Cathedrals"
+        osm_tags:
+          - "building=cathedral"
+      chapel:
+        name_ru: "Часовни"
+        name_en: "Chapels"
+        osm_tags:
+          - "building=chapel"
+
+  military:
+    name_ru: "Военные объекты"
+    name_en: "Military"
+    icon: "shield"
+    subcategories:
+      fortress:
+        name_ru: "Крепости"
+        name_en: "Fortresses"
+        osm_tags:
+          - "historic=fort"
+          - "historic=castle"
+      bunker:
+        name_ru: "Бункеры"
+        name_en: "Bunkers"
+        osm_tags:
+          - "military=bunker"
+      memorial:
+        name_ru: "Мемориалы"
+        name_en: "Memorials"
+        osm_tags:
+          - "historic=memorial"
+          - "historic=monument"
+      battlefield:
+        name_ru: "Поля сражений"
+        name_en: "Battlefields"
+        osm_tags:
+          - "historic=battlefield"
+
+  architecture:
+    name_ru: "Архитектура"
+    name_en: "Architecture"
+    icon: "building"
+    subcategories:
+      manor:
+        name_ru: "Усадьбы"
+        name_en: "Manors"
+        osm_tags:
+          - "historic=manor"
+      palace:
+        name_ru: "Дворцы"
+        name_en: "Palaces"
+        osm_tags:
+          - "historic=palace"
+      tower:
+        name_ru: "Башни"
+        name_en: "Towers"
+        osm_tags:
+          - "man_made=tower"
+          - "historic=tower"
+      ruins:
+        name_ru: "Руины"
+        name_en: "Ruins"
+        osm_tags:
+          - "historic=ruins"
+
+  trails:
+    name_ru: "Исторические тропы"
+    name_en: "Historical Trails"
+    icon: "route"
+    subcategories:
+      war_path:
+        name_ru: "Тропы ВОВ"
+        name_en: "WW2 Trails"
+        osm_tags: []
+      trade_route:
+        name_ru: "Торговые пути"
+        name_en: "Trade Routes"
+        osm_tags: []
+      pilgrimage:
+        name_ru: "Паломнические пути"
+        name_en: "Pilgrimage Routes"
+        osm_tags: []
+
+
+
+

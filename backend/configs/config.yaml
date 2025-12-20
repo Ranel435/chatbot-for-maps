@@ -1,0 +1,27 @@
+server:
+  http_port: "8080"
+  grpc_port: "9090"
+
+postgres:
+  url: "postgres://mapbot:mapbot@localhost:5432/mapbot?sslmode=disable"
+  max_conns: 100
+  min_conns: 20
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+
+qdrant:
+  host: "localhost"
+  port: 6334
+
+osrm:
+  url: "https://router.project-osrm.org"
+
+embedding:
+  url: "localhost:50051"
+
+
+
+
