@@ -1,0 +1,101 @@
+services:
+  mapbot-api:
+    build: ./backend
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      - POSTGRES_URL=postgres://mapbot:mapbot@postgres:5432/mapbot?sslmode=disable
+      - REDIS_URL=redis:6379
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6334
+      - OSRM_URL=http://osrm:5000
+      - EMBEDDING_URL=embedding:50051
+      - HTTP_PORT=8080
+      - GRPC_PORT=9090
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      osrm:
+        condition: service_started
+    restart: unless-stopped
+
+  embedding:
+    build: ./backend/embedding-service
+    ports:
+      - "50051:50051"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    environment:
+      POSTGRES_DB: mapbot
+      POSTGRES_USER: mapbot
+      POSTGRES_PASSWORD: mapbot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mapbot -d mapbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mapbot-api
+    environment:
+      - VITE_API_URL=http://localhost:8080
+
+  osrm-init:
+    build: ./backend/osrm-init
+    platform: linux/amd64
+    volumes:
+      - osrm_data:/data
+
+  osrm:
+    image: osrm/osrm-backend
+    platform: linux/amd64
+    ports:
+      - "5001:5000"
+    volumes:
+      - osrm_data:/data
+    command: osrm-routed --algorithm mld /data/moscow-latest.osrm
+    depends_on:
+      osrm-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  osrm_data:
