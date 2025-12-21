@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package route;
+
+option go_package = "github.com/dremotha/mapbot/api/proto/route";
+
+import "search.proto";
+
+service RouteService {
+    rpc BuildRoute(BuildRouteRequest) returns (BuildRouteResponse);
+    rpc BuildRouteFromPOIs(BuildRouteFromPOIsRequest) returns (BuildRouteResponse);
+}
+
+message BuildRouteRequest {
+    optional search.Coordinate start = 1;
+    optional search.Coordinate end = 2;
+    repeated search.Coordinate waypoints = 3;
+    TransportMode mode = 4;
+}
+
+message BuildRouteFromPOIsRequest {
+    repeated string poi_ids = 1;
+    optional search.Coordinate start = 2;
+    TransportMode mode = 3;
+}
+
+message BuildRouteResponse {
+    Route route = 1;
+    string message = 2;
+    repeated search.POI pois = 3;
+}
+
+message Route {
+    double distance_km = 1;
+    double duration_min = 2;
+    string geometry = 3;
+    repeated Waypoint waypoints = 4;
+    TransportMode mode = 5;
+}
+
+message Waypoint {
+    optional search.POI poi = 1;
+    search.Coordinate location = 2;
+    string name = 3;
+    int32 order = 4;
+}
+
+enum TransportMode {
+    TRANSPORT_MODE_UNSPECIFIED = 0;
+    TRANSPORT_MODE_WALKING = 1;
+    TRANSPORT_MODE_DRIVING = 2;
+    TRANSPORT_MODE_CYCLING = 3;
+}
+
+
+
+
