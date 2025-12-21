@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package search;
+
+option go_package = "github.com/dremotha/mapbot/api/proto/search";
+
+service SearchService {
+    rpc Search(SearchRequest) returns (SearchResponse);
+    rpc GetPOI(GetPOIRequest) returns (POI);
+    rpc GetCategories(GetCategoriesRequest) returns (GetCategoriesResponse);
+}
+
+message SearchRequest {
+    string query = 1;
+    repeated string categories = 2;
+    optional Coordinate center = 3;
+    double radius_km = 4;
+    int32 limit = 5;
+    int32 offset = 6;
+}
+
+message SearchResponse {
+    repeated POI pois = 1;
+    int32 total = 2;
+    string query = 3;
+    int64 took_ms = 4;
+}
+
+message GetPOIRequest {
+    string id = 1;
+}
+
+message GetCategoriesRequest {}
+
+message GetCategoriesResponse {
+    repeated Category categories = 1;
+}
+
+message POI {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    string short_description = 4;
+    double lat = 5;
+    double lng = 6;
+    string address = 7;
+    string category = 8;
+    string subcategory = 9;
+    repeated string tags = 10;
+    string historical_period = 11;
+    optional int32 year_built = 12;
+    optional int32 year_destroyed = 13;
+    string source = 14;
+    optional int64 osm_id = 15;
+    double popularity_score = 16;
+}
+
+message Coordinate {
+    double lat = 1;
+    double lng = 2;
+}
+
+message Category {
+    string id = 1;
+    string name_ru = 2;
+    string name_en = 3;
+    string parent_id = 4;
+    string icon = 5;
+    repeated string osm_tags = 6;
+    repeated Category children = 7;
+}
+
+
+
+
