@@ -1,4 +1,4 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+export const API_URL =  window.location.origin;
 
 export const MAP_CONFIG = {
   center: [55.7558, 37.6173] as [number, number],
