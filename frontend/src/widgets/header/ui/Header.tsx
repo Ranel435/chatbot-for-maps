@@ -6,6 +6,7 @@ const navItems = [
   { path: '/', label: 'Главная' },
   { path: '/explore', label: 'Исследовать' },
   { path: '/chat', label: 'Чат' },
+  { path: '/favorites', label: 'Избранное' },
   { path: '/route', label: 'Маршрут' },
 ];
 

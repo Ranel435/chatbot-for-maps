@@ -1,5 +1,9 @@
 import { API_URL } from '../config';
 import type { SearchResult, POI, Category, ChatResponse, RouteResponse, Coordinate, TransportMode } from '../types';
+import { mockSearch, mockGetPOI, mockCategories, getMockChatResponse, mockBuildRoute, mockPOIs } from './mock';
+
+// Установите true для принудительного использования mock данных
+const USE_MOCK = true;
 
 class ApiClient {
   private baseUrl: string;
@@ -31,25 +35,61 @@ class ApiClient {
     radius_km?: number;
     limit?: number;
   }): Promise<SearchResult> {
-    return this.request<SearchResult>('/api/search', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    if (USE_MOCK) {
+      await this.simulateDelay();
+      return mockSearch(params);
+    }
+    try {
+      return await this.request<SearchResult>('/api/search', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    } catch {
+      return mockSearch(params);
+    }
   }
 
   async chat(query: string, location?: Coordinate): Promise<ChatResponse> {
-    return this.request<ChatResponse>('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({ query, location }),
-    });
+    if (USE_MOCK) {
+      await this.simulateDelay(800);
+      return getMockChatResponse(query);
+    }
+    try {
+      return await this.request<ChatResponse>('/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({ query, location }),
+      });
+    } catch {
+      return getMockChatResponse(query);
+    }
   }
 
   async getPOI(id: string): Promise<POI> {
-    return this.request<POI>(`/api/poi/${id}`);
+    if (USE_MOCK) {
+      await this.simulateDelay();
+      const poi = mockGetPOI(id);
+      if (!poi) throw new Error('POI not found');
+      return poi;
+    }
+    try {
+      return await this.request<POI>(`/api/poi/${id}`);
+    } catch {
+      const poi = mockGetPOI(id);
+      if (!poi) throw new Error('POI not found');
+      return poi;
+    }
   }
 
   async getCategories(): Promise<Category[]> {
-    return this.request<Category[]>('/api/categories');
+    if (USE_MOCK) {
+      await this.simulateDelay();
+      return mockCategories;
+    }
+    try {
+      return await this.request<Category[]>('/api/categories');
+    } catch {
+      return mockCategories;
+    }
   }
 
   async buildRoute(params: {
@@ -58,6 +98,15 @@ class ApiClient {
     waypoints?: Coordinate[];
     mode?: TransportMode;
   }): Promise<RouteResponse> {
+    if (USE_MOCK) {
+      await this.simulateDelay(500);
+      // Для простого buildRoute используем первые POI
+      return mockBuildRoute({
+        poi_ids: mockPOIs.slice(0, 3).map(p => p.id),
+        start: params.start,
+        mode: params.mode,
+      });
+    }
     return this.request<RouteResponse>('/api/route', {
       method: 'POST',
       body: JSON.stringify(params),
@@ -70,6 +119,15 @@ class ApiClient {
     mode?: TransportMode;
     limit?: number;
   }): Promise<RouteResponse> {
+    if (USE_MOCK) {
+      await this.simulateDelay(600);
+      const searchResult = mockSearch({ query: params.query, limit: params.limit || 5 });
+      return mockBuildRoute({
+        poi_ids: searchResult.pois.map(p => p.id),
+        start: params.start,
+        mode: params.mode,
+      });
+    }
     return this.request<RouteResponse>('/api/route/query', {
       method: 'POST',
       body: JSON.stringify(params),
@@ -81,10 +139,22 @@ class ApiClient {
     start?: Coordinate;
     mode?: TransportMode;
   }): Promise<RouteResponse> {
-    return this.request<RouteResponse>('/api/route/pois', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    if (USE_MOCK) {
+      await this.simulateDelay(500);
+      return mockBuildRoute(params);
+    }
+    try {
+      return await this.request<RouteResponse>('/api/route/pois', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    } catch {
+      return mockBuildRoute(params);
+    }
+  }
+
+  private simulateDelay(ms: number = 300): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
 
