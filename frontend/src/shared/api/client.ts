@@ -3,7 +3,7 @@ import type { SearchResult, POI, Category, ChatResponse, RouteResponse, Coordina
 import { mockSearch, mockGetPOI, mockCategories, getMockChatResponse, mockBuildRoute, mockPOIs } from './mock';
 
 // Установите true для принудительного использования mock данных
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 class ApiClient {
   private baseUrl: string;
