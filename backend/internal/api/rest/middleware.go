@@ -2,8 +2,11 @@ package rest
 
 import (
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type RateLimiter struct {
@@ -87,6 +90,45 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 	})
 }
 
+// responseWriter is a wrapper that captures the status code
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
 
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
 
+// MetricsMiddleware collects HTTP metrics for Prometheus
+func MetricsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip metrics endpoint itself
+		if r.URL.Path == "/metrics" {
+			next.ServeHTTP(w, r)
+			return
+		}
 
+		start := time.Now()
+		httpRequestsInFlight.Inc()
+		defer httpRequestsInFlight.Dec()
+
+		// Wrap response writer to capture status code
+		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+		// Get route pattern for better metric labeling
+		endpoint := r.URL.Path
+		if rctx := chi.RouteContext(r.Context()); rctx != nil && rctx.RoutePattern() != "" {
+			endpoint = rctx.RoutePattern()
+		}
+
+		next.ServeHTTP(rw, r)
+
+		duration := time.Since(start).Seconds()
+		status := strconv.Itoa(rw.statusCode)
+
+		httpRequestsTotal.WithLabelValues(r.Method, endpoint, status).Inc()
+		httpRequestDuration.WithLabelValues(r.Method, endpoint).Observe(duration)
+	})
+}
