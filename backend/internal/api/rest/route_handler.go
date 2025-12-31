@@ -1,19 +1,28 @@
 package rest
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+
+	"github.com/google/uuid"
 
 	"github.com/dremotha/mapbot/internal/domain"
 	"github.com/dremotha/mapbot/internal/service"
 )
 
-type RouteHandler struct {
-	routingService *service.RoutingService
-	searchService  *service.SearchService
+type RouteSearchService interface {
+	Search(ctx context.Context, query string, filters domain.SearchFilters) (*domain.SearchResult, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.POI, error)
+	GetCategories(ctx context.Context) ([]domain.Category, error)
 }
 
-func NewRouteHandler(routingService *service.RoutingService, searchService *service.SearchService) *RouteHandler {
+type RouteHandler struct {
+	routingService *service.RoutingService
+	searchService  RouteSearchService
+}
+
+func NewRouteHandler(routingService *service.RoutingService, searchService RouteSearchService) *RouteHandler {
 	return &RouteHandler{
 		routingService: routingService,
 		searchService:  searchService,
