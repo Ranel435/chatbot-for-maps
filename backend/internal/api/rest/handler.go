@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -11,14 +12,20 @@ import (
 	"github.com/dremotha/mapbot/internal/service"
 )
 
+type SearchService interface {
+	Search(ctx context.Context, query string, filters domain.SearchFilters) (*domain.SearchResult, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.POI, error)
+	GetCategories(ctx context.Context) ([]domain.Category, error)
+}
+
 type Handler struct {
-	searchService     *service.SearchService
+	searchService     SearchService
 	intentClassifier  *service.IntentClassifier
 	responseGenerator *service.ResponseGenerator
 }
 
 func NewHandler(
-	searchService *service.SearchService,
+	searchService SearchService,
 	intentClassifier *service.IntentClassifier,
 	responseGenerator *service.ResponseGenerator,
 ) *Handler {

@@ -2,6 +2,7 @@ package osm
 
 import (
 	"github.com/dremotha/mapbot/internal/domain"
+	pkgosm "github.com/dremotha/mapbot/pkg/osm"
 )
 
 type Parser struct{}
@@ -10,7 +11,7 @@ func NewParser() *Parser {
 	return &Parser{}
 }
 
-func (p *Parser) ParseElements(elements []Element) []domain.POI {
+func (p *Parser) ParseElements(elements []pkgosm.Element) []domain.POI {
 	pois := make([]domain.POI, 0, len(elements))
 
 	for _, el := range elements {
@@ -23,7 +24,7 @@ func (p *Parser) ParseElements(elements []Element) []domain.POI {
 	return pois
 }
 
-func (p *Parser) parseElement(el Element) *domain.POI {
+func (p *Parser) parseElement(el pkgosm.Element) *domain.POI {
 	lat, lng := p.getCoordinates(el)
 	if lat == 0 && lng == 0 {
 		return nil
@@ -54,7 +55,7 @@ func (p *Parser) parseElement(el Element) *domain.POI {
 	return poi
 }
 
-func (p *Parser) getCoordinates(el Element) (float64, float64) {
+func (p *Parser) getCoordinates(el pkgosm.Element) (float64, float64) {
 	if el.Lat != 0 && el.Lon != 0 {
 		return el.Lat, el.Lon
 	}
@@ -64,7 +65,7 @@ func (p *Parser) getCoordinates(el Element) (float64, float64) {
 	return 0, 0
 }
 
-func (p *Parser) getName(el Element) string {
+func (p *Parser) getName(el pkgosm.Element) string {
 	if name, ok := el.Tags["name"]; ok {
 		return name
 	}
@@ -77,7 +78,7 @@ func (p *Parser) getName(el Element) string {
 	return ""
 }
 
-func (p *Parser) getDescription(el Element) string {
+func (p *Parser) getDescription(el pkgosm.Element) string {
 	if desc, ok := el.Tags["description"]; ok {
 		return desc
 	}
@@ -87,14 +88,14 @@ func (p *Parser) getDescription(el Element) string {
 	return ""
 }
 
-func (p *Parser) getShortDescription(el Element) string {
+func (p *Parser) getShortDescription(el pkgosm.Element) string {
 	if desc, ok := el.Tags["note"]; ok {
 		return desc
 	}
 	return ""
 }
 
-func (p *Parser) getAddress(el Element) string {
+func (p *Parser) getAddress(el pkgosm.Element) string {
 	parts := []string{}
 
 	if street, ok := el.Tags["addr:street"]; ok {
@@ -118,7 +119,7 @@ func (p *Parser) getAddress(el Element) string {
 	return result
 }
 
-func (p *Parser) getCategory(el Element) (string, string) {
+func (p *Parser) getCategory(el pkgosm.Element) (string, string) {
 	if historic, ok := el.Tags["historic"]; ok {
 		switch historic {
 		case "church", "cathedral", "chapel":
@@ -179,7 +180,7 @@ func (p *Parser) getCategory(el Element) (string, string) {
 	return "architecture", ""
 }
 
-func (p *Parser) getTags(el Element) []string {
+func (p *Parser) getTags(el pkgosm.Element) []string {
 	tags := []string{}
 
 	relevantKeys := []string{
@@ -196,7 +197,7 @@ func (p *Parser) getTags(el Element) []string {
 	return tags
 }
 
-func (p *Parser) getHistoricalPeriod(el Element) string {
+func (p *Parser) getHistoricalPeriod(el pkgosm.Element) string {
 	if period, ok := el.Tags["start_date"]; ok {
 		return period
 	}

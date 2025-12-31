@@ -5,21 +5,29 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/dremotha/mapbot/internal/domain"
 	"github.com/dremotha/mapbot/internal/service"
 )
 
+type GRPCSearchService interface {
+	Search(ctx context.Context, query string, filters domain.SearchFilters) (*domain.SearchResult, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.POI, error)
+	GetCategories(ctx context.Context) ([]domain.Category, error)
+}
+
 type Server struct {
 	grpcServer       *grpc.Server
-	searchService    *service.SearchService
+	searchService    GRPCSearchService
 	routingService   *service.RoutingService
 	intentClassifier *service.IntentClassifier
 }
 
 func NewServer(
-	searchService *service.SearchService,
+	searchService GRPCSearchService,
 	routingService *service.RoutingService,
 	intentClassifier *service.IntentClassifier,
 ) *Server {

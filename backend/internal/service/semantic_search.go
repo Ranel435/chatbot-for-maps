@@ -91,6 +91,14 @@ func (s *SemanticSearchService) IndexPOIs(ctx context.Context, pois []domain.POI
 	return nil
 }
 
+func (s *SemanticSearchService) GetByID(ctx context.Context, id uuid.UUID) (*domain.POI, error) {
+	return s.poiRepo.GetByID(ctx, id)
+}
+
+func (s *SemanticSearchService) GetCategories(ctx context.Context) ([]domain.Category, error) {
+	return s.poiRepo.GetCategories(ctx)
+}
+
 
 
 

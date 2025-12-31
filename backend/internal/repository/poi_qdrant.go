@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 
@@ -37,13 +38,24 @@ func (r *QdrantPOIRepository) Index(ctx context.Context, poi *domain.POI) error 
 }
 
 func (r *QdrantPOIRepository) IndexBatch(ctx context.Context, pois []domain.POI) error {
-	texts := make([]string, len(pois))
-	for i, poi := range pois {
+	// Filter out POIs with empty names
+	validPOIs := make([]domain.POI, 0, len(pois))
+	texts := make([]string, 0, len(pois))
+	
+	for _, poi := range pois {
 		text := poi.Name
+		if text == "" {
+			continue // Skip POIs without names
+		}
 		if poi.Description != "" {
 			text += " " + poi.Description
 		}
-		texts[i] = text
+		validPOIs = append(validPOIs, poi)
+		texts = append(texts, text)
+	}
+
+	if len(validPOIs) == 0 {
+		return nil // Nothing to index
 	}
 
 	vectors, err := r.embeddingClient.EmbedBatch(ctx, texts)
@@ -51,7 +63,11 @@ func (r *QdrantPOIRepository) IndexBatch(ctx context.Context, pois []domain.POI)
 		return err
 	}
 
-	return r.qdrant.UpsertBatch(ctx, pois, vectors)
+	if len(vectors) != len(validPOIs) {
+		return fmt.Errorf("pois and vectors length mismatch: %d pois vs %d vectors", len(validPOIs), len(vectors))
+	}
+
+	return r.qdrant.UpsertBatch(ctx, validPOIs, vectors)
 }
 
 func (r *QdrantPOIRepository) SemanticSearch(ctx context.Context, query string, filters domain.SearchFilters) ([]uuid.UUID, []float32, error) {

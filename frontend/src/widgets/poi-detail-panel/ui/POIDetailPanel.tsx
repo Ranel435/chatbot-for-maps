@@ -1,8 +1,10 @@
 import { useCallback } from 'react';
 import { usePOIStore } from '../../../entities/poi';
 import { useRouteStore, useBuildRouteFromPOIs } from '../../../entities/route';
+import { FavoriteButton } from '../../../entities/favorites';
 import { CategoryBadge } from '../../../entities/category';
 import { Card, Button } from '../../../shared/ui';
+import { CategoryIcon } from '../../../shared/ui/icons';
 import { useGeolocation, useToast, cn } from '../../../shared/lib';
 import type { POI } from '../../../shared/types';
 
@@ -82,11 +84,18 @@ export function POIDetailPanel({ poi, onClose, className }: POIDetailPanelProps)
           </svg>
         </button>
 
-        <h1 className="text-2xl font-bold text-white mb-2 pr-10">{poi.name}</h1>
-
-        <div className="flex items-center gap-2 mb-4">
-          <CategoryBadge category={poi.category} />
-          {poi.subcategory && <CategoryBadge category={poi.subcategory} size="sm" />}
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+            <CategoryIcon category={poi.subcategory || poi.category} size={28} />
+          </div>
+          <div className="flex-1 min-w-0 pr-10">
+            <h1 className="text-xl font-bold text-white mb-1">{poi.name}</h1>
+            <div className="flex items-center gap-2">
+              <CategoryBadge category={poi.category} size="sm" />
+              {poi.subcategory && <CategoryBadge category={poi.subcategory} size="sm" />}
+            </div>
+          </div>
+          <FavoriteButton poi={poi} size="md" />
         </div>
 
         {poi.address && <p className="text-white/70 mb-4">{poi.address}</p>}
