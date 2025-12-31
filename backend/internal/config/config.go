@@ -13,6 +13,7 @@ type Config struct {
 	Qdrant     QdrantConfig
 	OSRM       OSRMConfig
 	Embedding  EmbeddingConfig
+	Metrics    MetricsConfig
 }
 
 type ServerConfig struct {
@@ -46,6 +47,10 @@ type EmbeddingConfig struct {
 	URL string
 }
 
+type MetricsConfig struct {
+	Enabled bool
+}
+
 func Load() *Config {
 	return &Config{
 		Server: ServerConfig{
@@ -73,6 +78,9 @@ func Load() *Config {
 		Embedding: EmbeddingConfig{
 			URL: getEnv("EMBEDDING_URL", "localhost:50051"),
 		},
+		Metrics: MetricsConfig{
+			Enabled: getEnvBool("METRICS_ENABLED", true),
+		},
 	}
 }
 
@@ -92,6 +100,11 @@ func getEnvInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
-
-
-
+func getEnvBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if boolVal, err := strconv.ParseBool(value); err == nil {
+			return boolVal
+		}
+	}
+	return defaultValue
+}
