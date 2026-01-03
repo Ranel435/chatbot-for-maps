@@ -2,7 +2,6 @@ package rest
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 var (
@@ -31,101 +30,18 @@ var (
 		},
 	)
 
-	// PostgreSQL Pool Metrics
-	postgresPoolConnectionsTotal = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "postgres_pool_connections_total",
-			Help: "Total number of connections in the PostgreSQL pool",
-		},
-	)
-
-	postgresPoolConnectionsIdle = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "postgres_pool_connections_idle",
-			Help: "Number of idle connections in the PostgreSQL pool",
-		},
-	)
-
-	postgresPoolConnectionsInUse = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "postgres_pool_connections_in_use",
-			Help: "Number of connections currently in use in the PostgreSQL pool",
-		},
-	)
-
-	postgresPoolMaxConnections = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "postgres_pool_max_connections",
-			Help: "Maximum number of connections in the PostgreSQL pool",
-		},
-	)
-
-	// Redis Pool Metrics
-	redisPoolHitsTotal = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "redis_pool_hits_total",
-			Help: "Total number of times a connection was found in the pool",
-		},
-	)
-
-	redisPoolMissesTotal = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "redis_pool_misses_total",
-			Help: "Total number of times a connection was not found in the pool",
-		},
-	)
-
-	redisPoolTimeoutsTotal = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "redis_pool_timeouts_total",
-			Help: "Total number of times a wait timeout occurred",
-		},
-	)
-
-	redisPoolConnectionsTotal = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "redis_pool_connections_total",
-			Help: "Total number of connections in the Redis pool",
-		},
-	)
-
-	redisPoolConnectionsIdle = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "redis_pool_connections_idle",
-			Help: "Number of idle connections in the Redis pool",
-		},
-	)
-
-	redisPoolStaleConnectionsTotal = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "redis_pool_stale_connections_total",
-			Help: "Total number of stale connections removed from the pool",
-		},
-	)
+	// Note: PostgreSQL and Redis pool metrics are registered in
+	// internal/infrastructure/metrics/collector.go
 )
 
 // InitMetrics initializes and registers all Prometheus metrics
 func InitMetrics() {
-	// Register HTTP metrics
+	// Register HTTP metrics only (PostgreSQL and Redis metrics are registered
+	// by the metrics collector in internal/infrastructure/metrics/collector.go)
 	prometheus.MustRegister(httpRequestsTotal)
 	prometheus.MustRegister(httpRequestDuration)
 	prometheus.MustRegister(httpRequestsInFlight)
 
-	// Register PostgreSQL metrics
-	prometheus.MustRegister(postgresPoolConnectionsTotal)
-	prometheus.MustRegister(postgresPoolConnectionsIdle)
-	prometheus.MustRegister(postgresPoolConnectionsInUse)
-	prometheus.MustRegister(postgresPoolMaxConnections)
-
-	// Register Redis metrics
-	prometheus.MustRegister(redisPoolHitsTotal)
-	prometheus.MustRegister(redisPoolMissesTotal)
-	prometheus.MustRegister(redisPoolTimeoutsTotal)
-	prometheus.MustRegister(redisPoolConnectionsTotal)
-	prometheus.MustRegister(redisPoolConnectionsIdle)
-	prometheus.MustRegister(redisPoolStaleConnectionsTotal)
-
-	// Register Go runtime metrics
-	prometheus.MustRegister(collectors.NewGoCollector())
-	prometheus.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	// Note: Go runtime metrics (go_*, process_*) are automatically registered
+	// by Prometheus's DefaultRegistry, so we don't need to register them explicitly
 }
