@@ -34,11 +34,17 @@ class EmbeddingServicer(embedding_pb2_grpc.EmbeddingServiceServicer):
 
     def EmbedBatch(self, request, context):
         try:
-            embeddings = self.model.encode(list(request.texts), convert_to_numpy=True)
+            texts = list(request.texts)
+            logger.info(f"EmbedBatch received {len(texts)} texts")
+
+            embeddings = self.model.encode(texts, convert_to_numpy=True)
+            logger.info(f"EmbedBatch produced shape: {embeddings.shape}")
+
             responses = [
                 embedding_pb2.EmbedResponse(vector=emb.tolist())
                 for emb in embeddings
             ]
+            logger.info(f"EmbedBatch returning {len(responses)} vectors")
             return embedding_pb2.EmbedBatchResponse(vectors=responses)
         except Exception as e:
             logger.error(f"Error batch embedding: {e}")

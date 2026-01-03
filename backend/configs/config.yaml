@@ -22,6 +22,9 @@ osrm:
 embedding:
   url: "localhost:50051"
 
+metrics:
+  enabled: true
+
 
 
 

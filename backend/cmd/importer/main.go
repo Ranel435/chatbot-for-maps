@@ -77,22 +77,37 @@ func main() {
 
 	var resp *pkgosm.OverpassResponse
 
-	switch *queryType {
-	case "churches":
-		log.Println("Querying churches from OSM...")
-		resp, err = client.QueryChurches(ctx, bbox)
-	case "memorials":
-		log.Println("Querying memorials from OSM...")
-		resp, err = client.QueryMemorials(ctx, bbox)
-	case "historic", "all":
-		log.Println("Querying all historic places from OSM...")
-		resp, err = client.QueryHistoricPlaces(ctx, bbox)
-	default:
-		log.Fatalf("Unknown query type: %s", *queryType)
+	// Retry Overpass queries to handle occasional 504s
+	maxAttempts := 5
+	backoff := 15 * time.Second
+	var lastErr error
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		switch *queryType {
+		case "churches":
+			log.Printf("Querying churches from OSM... (attempt %d/%d)", attempt, maxAttempts)
+			resp, err = client.QueryChurches(ctx, bbox)
+		case "memorials":
+			log.Printf("Querying memorials from OSM... (attempt %d/%d)", attempt, maxAttempts)
+			resp, err = client.QueryMemorials(ctx, bbox)
+		case "historic", "all":
+			log.Printf("Querying all historic places from OSM... (attempt %d/%d)", attempt, maxAttempts)
+			resp, err = client.QueryHistoricPlaces(ctx, bbox)
+		default:
+			log.Fatalf("Unknown query type: %s", *queryType)
+		}
+
+		if err == nil {
+			break
+		}
+
+		lastErr = err
+		log.Printf("Failed to query OSM (attempt %d/%d): %v", attempt, maxAttempts, err)
+		time.Sleep(backoff)
 	}
 
 	if err != nil {
-		log.Fatalf("Failed to query OSM: %v", err)
+		log.Fatalf("Failed to query OSM after %d attempts: %v", maxAttempts, lastErr)
 	}
 
 	log.Printf("Received %d elements from OSM", len(resp.Elements))

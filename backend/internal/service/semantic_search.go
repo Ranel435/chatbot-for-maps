@@ -27,16 +27,13 @@ func (s *SemanticSearchService) Search(ctx context.Context, query string, filter
 
 	ids, scores, err := s.qdrantRepo.SemanticSearch(ctx, query, filters)
 	if err != nil {
+		// Fallback to text search if semantic search fails
 		return s.fallbackSearch(ctx, query, filters)
 	}
 
 	if len(ids) == 0 {
-		return &domain.SearchResult{
-			POIs:   []domain.POI{},
-			Total:  0,
-			Query:  query,
-			TookMs: time.Since(start).Milliseconds(),
-		}, nil
+		// Fallback to text search if no semantic results found
+		return s.fallbackSearch(ctx, query, filters)
 	}
 
 	pois, err := s.fetchPOIsByIDs(ctx, ids, scores)
@@ -44,12 +41,32 @@ func (s *SemanticSearchService) Search(ctx context.Context, query string, filter
 		return nil, err
 	}
 
-	return &domain.SearchResult{
+	result := &domain.SearchResult{
 		POIs:   pois,
 		Total:  len(pois),
 		Query:  query,
 		TookMs: time.Since(start).Milliseconds(),
-	}, nil
+	}
+
+	// If semantic search returned few results, supplement with text search
+	if len(pois) < 10 {
+		textResult, err := s.poiRepo.SearchByText(ctx, query, filters)
+		if err == nil && textResult.Total > 0 {
+			// Merge results, avoiding duplicates
+			existingIDs := make(map[uuid.UUID]bool)
+			for _, poi := range pois {
+				existingIDs[poi.ID] = true
+			}
+			for _, poi := range textResult.POIs {
+				if !existingIDs[poi.ID] && len(result.POIs) < 50 {
+					result.POIs = append(result.POIs, poi)
+					result.Total++
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
 
 func (s *SemanticSearchService) fetchPOIsByIDs(ctx context.Context, ids []uuid.UUID, scores []float32) ([]domain.POI, error) {

@@ -15,6 +15,7 @@ import (
 	"github.com/dremotha/mapbot/internal/api/rest"
 	"github.com/dremotha/mapbot/internal/config"
 	"github.com/dremotha/mapbot/internal/domain"
+	"github.com/dremotha/mapbot/internal/infrastructure/metrics"
 	"github.com/dremotha/mapbot/internal/infrastructure/osrm"
 	"github.com/dremotha/mapbot/internal/infrastructure/postgres"
 	"github.com/dremotha/mapbot/internal/infrastructure/qdrant"
@@ -29,6 +30,10 @@ func main() {
 	ctx := context.Background()
 
 	log.Println("Starting MapBot server...")
+
+	// Initialize Prometheus metrics
+	rest.InitMetrics()
+	log.Println("Prometheus metrics initialized")
 
 	// PostgreSQL
 	pool, err := postgres.NewPool(ctx, cfg.Postgres)
@@ -108,6 +113,11 @@ func main() {
 	}
 	_ = cacheManager
 
+	// Start metrics collector
+	metricsCollector := metrics.NewCollector(pool, redisClient, 15*time.Second)
+	go metricsCollector.Start(ctx)
+	log.Println("Metrics collector started")
+
 	// HTTP handlers
 	handler := rest.NewHandler(searchService, intentClassifier, responseGenerator)
 	routeHandler := rest.NewRouteHandler(routingService, searchService)
@@ -142,6 +152,9 @@ func main() {
 	<-quit
 
 	log.Println("Shutting down server...")
+
+	// Stop metrics collector
+	metricsCollector.Stop()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
