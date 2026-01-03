@@ -1,116 +1,55 @@
 # MapBot
 
-Высоконагруженный backend-сервис для построения туристических маршрутов с фокусом на исторические объекты. 
+Бэкенд для поиска и построения туристических маршрутов с упором на исторические объекты Москвы и МО. Семантический поиск на Qdrant, маршрутизация через OSRM, данные из OSM (Overpass).
+Фронтенд есть, но vibecodded(
 
-## Характеристики
+## Архитектура
+- API: REST (8080) и gRPC (9090). Метрики Prometheus на API и embedding.
+- Поиск: семантический (Qdrant + embedding-service) с фолбэком на текстовый поиск PostgreSQL/PostGIS.
+- Маршруты: OSRM.
+- Кэш: Redis (не обязателен для запуска, но поддержан).
 
-- **Target RPS**: 50,000+
-- **Регион**: Москва + Московская область
-- **API**: REST + gRPC
-- **Поиск**: Семантический (Qdrant) + PostgreSQL/PostGIS
-- **Маршруты**: OSRM
+## Ключевые сервисы
+- mapbot-api — HTTP/gRPC, бизнес-логика, текстовый/семантический поиск, маршруты.
+- embedding-service (Python, sentence-transformers) — gRPC эмбеддинги; загрузка модели может занимать 1–3+ минут.
+- qdrant — векторное хранилище (collection `poi`, vector size 384, cosine).
+- postgres (PostGIS) — POI, категории, факты; миграции в `migrations/`.
+- importer — вытягивает POI из Overpass и индексирует в Postgres + Qdrant (с ретраями 504/429).
 
-## API
+## Поведение поиска
+- При ошибке/пустом ответе Qdrant — автоматический фолбэк на текстовый поиск.
+- Если семантических результатов мало, досмешиваются текстовые (без дублей, до 50).
 
-### REST API (порт 8080)
+## Данные и импорты
+- Источник: OSM Overpass (bbox Москва/МО). Типы: `churches`, `memorials`, `historic`.
+- Импорт: батчи 50, после Postgres сразу индексация в Qdrant. Ретраи Overpass: 5 попыток, 15s бэкофф.
 
-| Метод | Путь | Описание |
-|-------|------|----------|
-| POST | `/api/v1/search` | Поиск POI |
-| POST | `/api/v1/chat` | Чат-интерфейс |
-| GET | `/api/v1/poi/{id}` | Получение POI |
-| GET | `/api/v1/categories` | Список категорий |
-| POST | `/api/v1/route` | Построение маршрута |
-| POST | `/api/v1/route/pois` | Маршрут через POI |
-| POST | `/api/v1/route/query` | Маршрут по запросу |
-| GET | `/health` | Health check |
+## Конфигурация (важное)
+- `DATABASE_URL` / `POSTGRES_URL` — Postgres/PostGIS.
+- `QDRANT_URL` или хост/порт для Qdrant.
+- `EMBEDDING_GRPC_ADDR` (или `EMBEDDING_URL`) — адрес embedding gRPC.
+- `OSRM_URL` — точка OSRM.
+- Переменные портов API: `HTTP_PORT`, `GRPC_PORT`.
 
-### gRPC API (порт 9090)
-
-- `SearchService.Search`
-- `SearchService.GetPOI`
-- `SearchService.GetCategories`
-- `RouteService.BuildRoute`
-- `HealthService.Check`
-
-## Примеры запросов
-
-### Поиск
-
-```bash
-curl -X POST http://localhost:8080/api/v1/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "старые церкви", "limit": 10}'
-```
-
-### Чат
-
-```bash
-curl -X POST http://localhost:8080/api/v1/chat \
-  -H "Content-Type: application/json" \
-  -d '{"query": "построй маршрут по усадьбам"}'
-```
-
-### Маршрут
-
-```bash
-curl -X POST http://localhost:8080/api/v1/route/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "монастыри",
-    "start": {"lat": 55.7558, "lng": 37.6173},
-    "mode": "driving",
-    "limit": 5
-  }'
-```
-
-## Структура проекта
-
-```
-mapbot/
-├── cmd/
-│   ├── server/          # HTTP/gRPC сервер
-│   └── importer/        # Импорт данных OSM
-├── internal/
-│   ├── api/             # REST и gRPC handlers
-│   ├── domain/          # Доменные модели
-│   ├── service/         # Бизнес-логика
-│   ├── repository/      # Работа с БД
-│   ├── infrastructure/  # Внешние сервисы
-│   └── config/          # Конфигурация
-├── pkg/
-│   ├── osm/             # Клиент OSM Overpass
-│   └── embedding/       # Клиент эмбеддингов
-├── embedding-service/   # Python сервис эмбеддингов
-├── migrations/          # SQL миграции
-└── configs/             # YAML конфиги
-```
+## Health и готовность
+- API: `/health`.
+- Embedding: readiness после загрузки модели (важно для оркестрации, не привязывать старт API к его readiness — в API есть ретраи до 5 минут).
+- Qdrant: стандартный health на `:6333`.
 
 ## Категории POI
+- Религиозные: церкви, монастыри, соборы, часовни.
+- Военные: крепости, бункеры, мемориалы.
+- Архитектура: усадьбы, дворцы, башни, руины.
 
-- **Религиозные**: церкви, монастыри, соборы, часовни
-- **Военные**: крепости, бункеры, мемориалы
-- **Архитектура**: усадьбы, дворцы, башни, руины
-- **Тропы**: исторические маршруты, тропы ВОВ
+## Наблюдаемость
+- Prometheus: scrape API и embedding; метрики доступны по `/metrics` (API) и gRPC/логам embedding.
 
-## Конфигурация
-
-Переменные окружения:
-
-| Переменная | Описание | По умолчанию |
-|------------|----------|--------------|
-| HTTP_PORT | Порт REST API | 8080 |
-| GRPC_PORT | Порт gRPC API | 9090 |
-| POSTGRES_URL | URL PostgreSQL | postgres://mapbot:mapbot@localhost:5432/mapbot |
-| REDIS_URL | URL Redis | localhost:6379 |
-| QDRANT_HOST | Хост Qdrant | localhost |
-| QDRANT_PORT | Порт Qdrant | 6334 |
-| OSRM_URL | URL OSRM | http://localhost:5000 |
-| EMBEDDING_URL | URL Embedding service | localhost:50051 |
-
-Сервисы:
-- `mapbot-api` - основной сервис
-- `postgres` - PostgreSQL + PostGIS
-- `redis` - кэширование
-- `qdrant` - векторный поиск
-- `embedding` - Python сервис эмбеддингов
+## Структура
+```
+cmd/              # server, importer
+internal/         # api, service, repository, infrastructure, config
+pkg/              # osm client, embedding client
+embedding-service/# python gRPC embeddings
+migrations/       # SQL миграции
+configs/          # YAML
+```
