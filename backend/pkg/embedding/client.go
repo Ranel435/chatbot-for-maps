@@ -15,21 +15,35 @@ type Client struct {
 }
 
 func NewClient(addr string) (*Client, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	return NewClientWithRetry(addr, 5*time.Minute, 5*time.Second)
+}
 
-	conn, err := grpc.DialContext(ctx, addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("connect to embedding service: %w", err)
+func NewClientWithRetry(addr string, timeout time.Duration, retryInterval time.Duration) (*Client, error) {
+	deadline := time.Now().Add(timeout)
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+
+		conn, err := grpc.DialContext(ctx, addr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithBlock(),
+		)
+		cancel()
+
+		if err == nil {
+			return &Client{
+				conn:   conn,
+				client: NewEmbeddingServiceClient(conn),
+			}, nil
+		}
+
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("connect to embedding service after %v: %w", timeout, err)
+		}
+
+		fmt.Printf("Embedding service not ready, retrying in %v...\n", retryInterval)
+		time.Sleep(retryInterval)
 	}
-
-	return &Client{
-		conn:   conn,
-		client: NewEmbeddingServiceClient(conn),
-	}, nil
 }
 
 func (c *Client) Close() error {
@@ -103,53 +117,57 @@ func (c *embeddingServiceClient) Health(ctx context.Context, in *HealthRequest, 
 }
 
 type EmbedRequest struct {
-	Text string
+	Text string `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
 }
 
 type EmbedResponse struct {
-	Vector []float32
+	Vector []float32 `protobuf:"fixed32,1,rep,packed,name=vector,proto3" json:"vector,omitempty"`
 }
 
 type EmbedBatchRequest struct {
-	Texts []string
+	Texts []string `protobuf:"bytes,1,rep,name=texts,proto3" json:"texts,omitempty"`
 }
 
 type EmbedBatchResponse struct {
-	Vectors []*EmbedResponse
+	Vectors []*EmbedResponse `protobuf:"bytes,1,rep,name=vectors,proto3" json:"vectors,omitempty"`
 }
 
 type HealthRequest struct{}
 
 type HealthResponse struct {
-	Healthy    bool
-	ModelName  string
-	VectorSize int32
+	Healthy    bool   `protobuf:"varint,1,opt,name=healthy,proto3" json:"healthy,omitempty"`
+	ModelName  string `protobuf:"bytes,2,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
+	VectorSize int32  `protobuf:"varint,3,opt,name=vector_size,json=vectorSize,proto3" json:"vector_size,omitempty"`
 }
 
 func (m *EmbedRequest) Reset()         { *m = EmbedRequest{} }
 func (m *EmbedRequest) String() string { return fmt.Sprintf("EmbedRequest{Text: %s}", m.Text) }
 func (m *EmbedRequest) ProtoMessage()  {}
 
-func (m *EmbedResponse) Reset()         { *m = EmbedResponse{} }
-func (m *EmbedResponse) String() string { return fmt.Sprintf("EmbedResponse{Vector: [%d floats]}", len(m.Vector)) }
-func (m *EmbedResponse) ProtoMessage()  {}
+func (m *EmbedResponse) Reset() { *m = EmbedResponse{} }
+func (m *EmbedResponse) String() string {
+	return fmt.Sprintf("EmbedResponse{Vector: [%d floats]}", len(m.Vector))
+}
+func (m *EmbedResponse) ProtoMessage() {}
 
-func (m *EmbedBatchRequest) Reset()         { *m = EmbedBatchRequest{} }
-func (m *EmbedBatchRequest) String() string { return fmt.Sprintf("EmbedBatchRequest{Texts: %d}", len(m.Texts)) }
-func (m *EmbedBatchRequest) ProtoMessage()  {}
+func (m *EmbedBatchRequest) Reset() { *m = EmbedBatchRequest{} }
+func (m *EmbedBatchRequest) String() string {
+	return fmt.Sprintf("EmbedBatchRequest{Texts: %d}", len(m.Texts))
+}
+func (m *EmbedBatchRequest) ProtoMessage() {}
 
-func (m *EmbedBatchResponse) Reset()         { *m = EmbedBatchResponse{} }
-func (m *EmbedBatchResponse) String() string { return fmt.Sprintf("EmbedBatchResponse{Vectors: %d}", len(m.Vectors)) }
-func (m *EmbedBatchResponse) ProtoMessage()  {}
+func (m *EmbedBatchResponse) Reset() { *m = EmbedBatchResponse{} }
+func (m *EmbedBatchResponse) String() string {
+	return fmt.Sprintf("EmbedBatchResponse{Vectors: %d}", len(m.Vectors))
+}
+func (m *EmbedBatchResponse) ProtoMessage() {}
 
 func (m *HealthRequest) Reset()         { *m = HealthRequest{} }
 func (m *HealthRequest) String() string { return "HealthRequest{}" }
 func (m *HealthRequest) ProtoMessage()  {}
 
-func (m *HealthResponse) Reset()         { *m = HealthResponse{} }
-func (m *HealthResponse) String() string { return fmt.Sprintf("HealthResponse{Healthy: %v}", m.Healthy) }
-func (m *HealthResponse) ProtoMessage()  {}
-
-
-
-
+func (m *HealthResponse) Reset() { *m = HealthResponse{} }
+func (m *HealthResponse) String() string {
+	return fmt.Sprintf("HealthResponse{Healthy: %v}", m.Healthy)
+}
+func (m *HealthResponse) ProtoMessage() {}

@@ -20,6 +20,8 @@ services:
         condition: service_started
       osrm:
         condition: service_started
+      embedding:
+        condition: service_started
     restart: unless-stopped
 
   embedding:
@@ -30,6 +32,12 @@ services:
       resources:
         limits:
           memory: 1G
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.socket(); s.connect(('localhost', 50051)); s.close()\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
 
   postgres:
     image: postgis/postgis:16-3.4
