@@ -1,0 +1,41 @@
+---
+grafana:
+  admin:
+    existingSecret: grafana-secret
+    userKey: admin-user
+    passwordKey: admin-password
+  ingress:
+    enabled: true
+    hosts:
+      - grafana.wooork.space
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.wooork.space
+
+alertmanager:
+  config:
+    global: {}
+    route:
+      receiver: blackhole
+      group_by: ['alertname', 'namespace']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 2h
+
+      routes:
+        - receiver: blackhole
+          matchers:
+            - alertname="Watchdog"
+
+        - receiver: gotify
+          matchers:
+            - severity=~"warning|critical"
+          continue: false
+
+    receivers:
+      - name: blackhole
+      - name: gotify
+        webhook_configs:
+          - url: http://alertmanager-gotify-bridge.kube-prometheus-stack.svc:8080/gotify_webhook
+            send_resolved: true

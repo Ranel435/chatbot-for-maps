@@ -1,0 +1,28 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mapbot-importer
+  namespace: mapbot
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: importer
+          image: docker.io/g2ferret/mapbot-api:v2
+          imagePullPolicy: IfNotPresent
+          command: ["/app/importer"]
+          args: ["-type", "historic"]
+          envFrom:
+            - secretRef:
+                name: mapbot-backend-env
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "4"
+              memory: "4Gi"
