@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager-gotify-bridge
+  namespace: kube-prometheus-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager-gotify-bridge
+  template:
+    metadata:
+      labels:
+        app: alertmanager-gotify-bridge
+    spec:
+      containers:
+        - name: bridge
+          image: docker.io/druggeri/alertmanager_gotify_bridge:2.3.2
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: gotify-bridge-secret
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-gotify-bridge
+  namespace: kube-prometheus-stack
+spec:
+  selector:
+    app: alertmanager-gotify-bridge
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

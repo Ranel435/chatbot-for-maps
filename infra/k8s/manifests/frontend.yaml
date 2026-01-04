@@ -6,7 +6,7 @@ metadata:
   namespace: mapbot
   labels:
     app.kubernetes.io/name: mapbot-frontend
-    app.kubernetes.io/version: v3
+    app.kubernetes.io/version: v4
 spec:
   selector:
     app.kubernetes.io/name: mapbot-frontend
@@ -23,7 +23,7 @@ metadata:
   namespace: mapbot
   labels:
     app.kubernetes.io/name: &name mapbot-frontend
-    app.kubernetes.io/version: &version v3
+    app.kubernetes.io/version: &version v4
 spec:
   replicas: 1
   selector:
@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
         - name: mapbot-frontend
-          image: g2ferret/mapbot-frontend:v3
+          image: g2ferret/mapbot-frontend:v4
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

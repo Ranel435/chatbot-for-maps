@@ -12,7 +12,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: importer
-          image: docker.io/g2ferret/mapbot-api:v1
+          image: docker.io/g2ferret/mapbot-api:v2
           imagePullPolicy: IfNotPresent
           command: ["/app/importer"]
           args: ["-type", "historic"]

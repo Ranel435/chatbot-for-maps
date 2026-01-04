@@ -6,7 +6,7 @@ metadata:
   namespace: mapbot
   labels:
     app.kubernetes.io/name: mapbot-backend
-    app.kubernetes.io/version: v1
+    app.kubernetes.io/version: v2
 spec:
   selector:
     app.kubernetes.io/name: mapbot-backend
@@ -27,7 +27,7 @@ metadata:
   namespace: mapbot
   labels:
     app.kubernetes.io/name: &name mapbot-backend
-    app.kubernetes.io/version: &version v1
+    app.kubernetes.io/version: &version v2
 spec:
   replicas: 1
   selector:
@@ -41,7 +41,7 @@ spec:
     spec:
       containers:
         - name: mapbot-backend
-          image: docker.io/g2ferret/mapbot-api:v1
+          image: docker.io/g2ferret/mapbot-api:v2
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: gotify-test
+  namespace: kube-prometheus-stack
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: gotify.test
+      rules:
+        - alert: GotifyTestAlert
+          expr: vector(1)
+          for: 30s
+          labels:
+            severity: test
+          annotations:
+            summary: "Gotify test alert"
+            description: "Test alert from kube-prometheus-stack"

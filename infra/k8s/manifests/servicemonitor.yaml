@@ -1,0 +1,22 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend-servicemonitor
+  namespace: kube-prometheus-stack
+  labels:
+    app.kubernetes.io/component: metrics
+    app.kubernetes.io/name: backend-servicemonitor
+    release: kube-prometheus-stack 
+    app.kubernetes.io/instance: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mapbot-backend
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 5s
+  namespaceSelector:
+    matchNames:
+      - mapbot
